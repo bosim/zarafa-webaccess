@@ -514,8 +514,7 @@
 	 * @return Boolean returns true on a trial license, false when otherwise.
 	 */
 	function checkTrialVersion(){
-		$capabilities = mapi_zarafa_getcapabilities($GLOBALS['mapisession']->getDefaultMessageStore());
-		return (is_array($capabilities)&&array_search('TRIAL', $capabilities)!==false?true:false);
+		return false;
 	}
 
 	/**

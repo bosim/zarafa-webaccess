@@ -85,7 +85,7 @@ require_once 'XML/Parser.php';
  *     }
  * }
  * 
- * $p = &new myParser();
+ * $p = new myParser();
  * 
  * $result = $p->setInputFile('myDoc.xml');
  * $result = $p->parse();
