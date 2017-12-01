@@ -4,33 +4,7 @@
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License, version 3,
- * as published by the Free Software Foundation with the following
- * additional terms according to sec. 7:
- *
- * "Zarafa" is a registered trademark of Zarafa B.V.
- * The licensing of the Program under the AGPL does not imply a trademark
- * license. Therefore any rights, title and interest in our trademarks
- * remain entirely with us.
- *
- * Our trademark policy (see TRADEMARKS.txt) allows you to use our trademarks
- * in connection with Propagation and certain other acts regarding the Program.
- * In any case, if you propagate an unmodified version of the Program you are
- * allowed to use the term "Zarafa" to indicate that you distribute the Program.
- * Furthermore you may use our trademarks where it is necessary to indicate the
- * intended purpose of a product or service provided you use it in accordance
- * with honest business practices. For questions please contact Zarafa at
- * trademark@zarafa.com.
- *
- * The interactive user interface of the software displays an attribution
- * notice containing the term "Zarafa" and/or the logo of Zarafa.
- * Interactive user interfaces of unmodified and modified versions must
- * display Appropriate Legal Notices according to sec. 5 of the GNU Affero
- * General Public License, version 3, when you propagate unmodified or
- * modified versions of the Program. In accordance with sec. 7 b) of the GNU
- * Affero General Public License, version 3, these Appropriate Legal Notices
- * must retain the logo of Zarafa or display the words "Initial Development
- * by Zarafa" if the display of the logo is not reasonably feasible for
- * technical reasons.
+ * as published by the Free Software Foundation.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -331,5 +305,73 @@ function getCalendarItems($store, $calendar, $viewstart, $viewend, $propsrequest
 	// All items are guaranteed to overlap the interval <$viewstart, $viewend>. Note that we may be returning a few extra
 	// properties that the caller did not request (recurring, etc). This shouldn't be a problem though.
 	return $result;
+}
+
+/**
+ * Get the main calendar
+ */
+function getCalendar($store)
+{
+    $inbox = mapi_msgstore_getreceivefolder($store);
+    $inboxprops = mapi_getprops($inbox, array(PR_IPM_APPOINTMENT_ENTRYID));
+
+    if(!isset($inboxprops[PR_IPM_APPOINTMENT_ENTRYID]))
+        return false;
+
+    $calendar = mapi_msgstore_openentry($store, $inboxprops[PR_IPM_APPOINTMENT_ENTRYID]);
+
+    return $calendar;
+}
+
+/**
+ * Get the default store for this session
+ */
+function getDefaultStore($session)
+{
+    $msgstorestable = mapi_getmsgstorestable($session);
+
+    $msgstores = mapi_table_queryallrows($msgstorestable, array(PR_DEFAULT_STORE, PR_ENTRYID));
+
+    foreach ($msgstores as $row) {
+        if($row[PR_DEFAULT_STORE]) {
+            $storeentryid = $row[PR_ENTRYID];
+        }
+    }
+
+    if(!$storeentryid) {
+        print "Can't find default store\n";
+        return false;
+    }
+
+    $store = mapi_openmsgstore($session, $storeentryid);
+
+    return $store;
+}
+
+function forceUTF8($category)
+{
+    $old_locale = setlocale($category, "");
+    if(!isset($old_locale) || !$old_locale) {
+        print "Unable to initialize locale\n";
+        exit(1);
+    }
+    $dot = strpos($old_locale, ".");
+    if($dot) {
+        if(strrchr($old_locale, ".") == ".UTF-8" || strrchr($old_locale, ".") == ".utf8")
+            return true;
+        $old_locale = substr($old_locale, 0, $dot);
+    }
+    $new_locale = $old_locale . ".UTF-8";
+    $old_locale = setlocale($category, $new_locale);
+    if(!$old_locale) {
+        $new_locale = "en_US.UTF-8";
+        $old_locale = setlocale($category, $new_locale);
+    }
+    if(!$old_locale) {
+        print "Unable to set locale $new_locale\n";
+        exit(1);
+    }
+
+    return true;
 }
 ?>
